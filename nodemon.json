@@ -1,0 +1,18 @@
+{
+    "watch": [
+        "controllers/*",
+        "utils/*",
+        "routes.js",
+        "db/*",
+        "knexfile.js",
+        "index.js"
+    ],
+    "ignore": [
+        "contracts/*",
+        "artifacts/*",
+        "cache/*",
+        "scripts/*",
+        "hardhat.config.js"
+    ],
+    "exec": "node index.js"
+}

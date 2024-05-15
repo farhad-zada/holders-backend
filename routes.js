@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { addCollaboration, getCollaboration, getHolders } = require('./controllers/collaboration');
 const { addHolding, getHoldings } = require('./controllers/holding');
+const { deploy } = require('./controllers/deployer');
+
+// Deployer
+router.post('/deploy', deploy);
 
 // Collaborations
 router.post('/collaboration', addCollaboration);
