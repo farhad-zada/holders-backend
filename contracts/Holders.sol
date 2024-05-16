@@ -15,6 +15,7 @@ Math.round(Date.now()/1000)+3000;
 */
 
 contract Holders is Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    string public title;
     uint256 private s_startsAt;
     uint256 private s_endsAt;
     uint256 public constant PRICE_DECIMALS = 1e18;
@@ -63,6 +64,7 @@ contract Holders is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function initialize(
+        string memory m_title,
         Level[] memory m_levels,
         Token[] memory m_tokens,
         uint256 m_startsAt,
@@ -70,6 +72,7 @@ contract Holders is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
+        title = m_title;
         _insertLevels(m_levels);
         _insertTokens(m_tokens);
         s_startsAt = m_startsAt;
