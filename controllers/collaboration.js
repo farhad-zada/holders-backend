@@ -66,7 +66,7 @@ const getCollaboration = async (req, res) => {
             return errorResponse(res, 'Collaborator is required', 400);
         }
 
-        const collaborations = await knex('collaborations').whereRaw(`collaborators like '%${collaborator}%'`);
+        const collaborations = await knex('collaborations').whereLike('collaborators', collaborator);
 
         return successResponse(res, collaborations, 200);
     } catch (error) {
@@ -74,6 +74,32 @@ const getCollaboration = async (req, res) => {
         return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
     }
 }
+
+const collaborations = async (req, res) => {
+    try {
+        const queryObject = req.query;
+
+
+        const collaborationsQueryBuilder = knex('collaborations')
+
+        if (queryObject.collaborator && /^0x[a-fA-F0-9]{40}$/.test(queryObject.collaborator)) {
+            collaborationsQueryBuilder.whereILike('collaborators', `%${queryObject.collaborator}%`)
+        } else if (queryObject.collaborator) {
+            return errorResponse(res, 'Invalid address', 400);
+        }
+
+        if (queryObject.status && ['active', 'inactive'].includes(queryObject.status)) {
+            collaborationsQueryBuilder.where('status', queryObject.status)
+        }
+
+        const collaborations = await collaborationsQueryBuilder.select('collaboration', 'image');
+
+        return successResponse(res, collaborations, 200);
+    } catch (error) {
+        console.error('Error getting collaboration:', error);
+        return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
+    }
+};
 
 /**
  * Adds a new collaboration to the database.
@@ -109,5 +135,6 @@ const extractFields = (data, fields) => {
 module.exports = {
     addCollaboration,
     getCollaboration,
-    getHolders
+    getHolders,
+    collaborations
 };
