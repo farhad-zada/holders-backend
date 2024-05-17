@@ -2,10 +2,13 @@ const express = require('express');
 const knex = require('./db/knex');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+app.use(helmet());
 
 app.use(bodyParser.json());
 

@@ -1,51 +1,38 @@
 const knex = require('../db/knex');
 const { errorResponse, successResponse } = require('../utils/responseHandlers'); // Utility functions for consistent responses
 
+
 /**
  * Adds a new collaboration to the database.
  * @param {import('express').Request} req - Express request object
  * @param {import('express').Response} res - Express response object
  */
-const addCollaboration = async (req, res) => {
+const addCollaborator = async (req, res) => {
     try {
-        const data = extractFields(req.body, ['collaboration', 'collaborator', 'token', 'status', 'other', 'image']);
-
+        const { collaboration, collaborator } = req.body;
         // Validate the input data
-        if (!data.collaboration || !data.collaborator || !data.token) {
-            return errorResponse(res, 'Collaboration, collaborator & token are required', 400);
+        if (!collaboration || !collaborator) {
+            return errorResponse(res, 'Collaboration & collaborator are required', 400);
         }
 
-        // Check if the collaboration already exists
-        const existingCollaboration = await knex('collaborations').where({ collaboration: data.collaboration }).first();
+        const existingCollaboration = await knex('collaborations').where({ collaboration }).first();
 
         if (existingCollaboration) {
             // Update the existing collaboration to add the new collaborator
             const collaborators = JSON.parse(existingCollaboration.collaborators || '[]');
-            if (!collaborators.includes(data.collaborator)) {
-                collaborators.push(data.collaborator);
+            if (!collaborators.includes(collaborator)) {
+                collaborators.push(collaborator);
             }
 
             await knex('collaborations')
-                .where({ collaboration: data.collaboration })
+                .where({ collaboration })
                 .update({ collaborators: JSON.stringify(collaborators) });
 
-            return successResponse(res, { ...existingCollaboration, collaborators }, 200);
+            return { ...existingCollaboration, collaborators };
         } else {
-            // Create a new collaboration with the initial collaborator
-            const newCollaborationData = {
-                collaboration: data.collaboration,
-                collaborators: JSON.stringify([data.collaborator]),
-                token: data.token,
-                status: data.status,
-                other: data.other,
-                image: data.image
-            };
-
-            const [id] = await knex('collaborations').insert(newCollaborationData);
-            const newCollaboration = await knex('collaborations').where({ id }).first();
-
-            return successResponse(res, newCollaboration, 201);
+            return errorResponse(res, 'Collaboration not found', 404);
         }
+
     } catch (error) {
         console.error('Error adding collaboration:', error);
         return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
@@ -75,6 +62,11 @@ const getCollaboration = async (req, res) => {
     }
 }
 
+/**
+ * Gets all collaborations from the database based on the query parameters
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ */
 const collaborations = async (req, res) => {
     try {
         const queryObject = req.query;
@@ -123,17 +115,9 @@ const getHolders = async (req, res) => {
     }
 }
 
-const extractFields = (data, fields) => {
-    return fields.reduce((acc, field) => {
-        if (data[field]) {
-            acc[field] = data[field];
-        }
-        return acc;
-    }, {});
-}
 
 module.exports = {
-    addCollaboration,
+    addCollaborator,
     getCollaboration,
     getHolders,
     collaborations

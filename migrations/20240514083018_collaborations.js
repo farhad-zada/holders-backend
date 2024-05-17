@@ -6,11 +6,12 @@ exports.up = async function (knex) {
     if (!(await knex.schema.hasTable('collaborations'))) {
         return knex.schema.createTable('collaborations', (table) => {
             table.increments('id');
-            table.string('collaboration').notNullable().index();
-            table.string('image').nullable();
+            table.string('collaboration').notNullable().index().unique();
             table.json('collaborators').notNullable();
-            table.string('token').notNullable();
+            table.json('tokens').notNullable();
+            table.string('owner').notNullable();
             table.enum('status', ['active', 'paused', 'closed']).notNullable();
+            table.string('image').nullable();
             table.string('other').nullable();
             table.timestamps(true, true);
         });

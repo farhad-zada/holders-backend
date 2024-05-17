@@ -8,30 +8,64 @@ const { exec } = require('child_process');
  * @param {import('express').Response} res - Express response object
  */
 const deploy = async (req, res) => {
-    let { levels, tokens, startsAt, endsAt } = req.body;
+    try {
+        let { title, levels, tokens, startsAt, endsAt, signature } = req.body;
 
-    levels = JSON.stringify(levels);
-    tokens = JSON.stringify(tokens);
-    startsAt = startsAt * 1;
-    endsAt = endsAt * 1;
+        levels = JSON.stringify(levels);
+        tokens = JSON.stringify(tokens);
+        startsAt = startsAt * 1;
+        endsAt = endsAt * 1;
 
-    const command = `LEVELS='${levels}' TOKENS='${tokens}' STARTS_AT='${startsAt}' ENDS_AT='${endsAt}' npx hardhat run scripts/deploy.holders.js --network hardhat`;
+        const command = `SIGNATURE=${signature} TITLE=${title} LEVELS='${levels}' TOKENS='${tokens}' STARTS_AT='${startsAt}' ENDS_AT='${endsAt}' npx hardhat run scripts/deploy.holders.js --network hardhat`;
 
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error('Error deploying contract:', error);
-            return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
+        exec(command, async (error, stdout, stderr) => {
+            if (error) {
+                console.error('Error deploying contract:', error);
+                return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
+            }
+            if (stdout)
+                console.log(`stdout: ${stdout}`);
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
+            }
+
+
+            const result = JSON.parse(stdout);
+            const newCollaboration = await createCollaboration(result.collaborations, result.owner, tokens, 'active', null, null);
+            return successResponse(res, newCollaboration, 200);
         }
-        if (stdout)
-            console.log(`stdout: ${stdout}`);
-        if (stderr) {
-            console.error(`stderr: ${stderr}`);
-            return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
-        }
-        return successResponse(res, stdout.trim(), 200);
+        );
+    } catch (error) {
+        console.error('Error deploying contract:', error);
+        return errorResponse(res, "Something went wrong! Please contact farhad@yusifli.com", 500);
     }
-    );
 }
+
+const createCollaboration = async (collaboration, collaborator, tokens, status, other, image) => {
+    try {
+        tokens = JSON.parse(tokens).map(token => token[0]);
+        const newCollaborationData = {
+            collaboration,
+            collaborators: JSON.stringify([collaborator]),
+            tokens: JSON.stringify(tokens),
+            owner: collaborator,
+            status,
+            other,
+            image
+        };
+
+        const [id] = await knex('collaborations').insert(newCollaborationData);
+        const result = await knex('collaborations').where({ id }).first();
+        result.collaborators = JSON.parse(result.collaborators);
+        result.tokens = JSON.parse(result.tokens);
+        return result;
+    } catch (error) {
+        console.error('Error creating collaboration:', error);
+        throw new Error("Something went wrong! Please contact farhad@yusifli.com for help!");
+    }
+};
+
 
 
 const validate = (req, res, next) => {
@@ -50,12 +84,6 @@ const validate = (req, res, next) => {
             return errorResponse(res, 'Levels must be an array', 400);
         case !Array.isArray(tokens):
             return errorResponse(res, 'Tokens must be an array', 400);
-        case levels.length !== tokens.length:
-            return errorResponse(res, 'Levels and tokens must have the same length', 400);
-        case !levels.every(l => typeof l === 'number'):
-            return errorResponse(res, 'Levels must be numbers', 400);
-        case !tokens.every(t => typeof t === 'string'):
-            return errorResponse(res, 'Tokens must be strings', 400);
         case typeof startsAt !== 'number':
             return errorResponse(res, 'startsAt must be a number', 400);
         case typeof endsAt !== 'number':
@@ -68,5 +96,6 @@ const validate = (req, res, next) => {
 
 
 module.exports = {
-    deploy
+    deploy,
+    validate
 }
