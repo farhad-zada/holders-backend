@@ -13,6 +13,7 @@ async function main() {
         const endsAt = process.env.ENDS_AT * 1;
 
         const msg = {
+            title,
             levels,
             tokens,
             startsAt,
